@@ -11,10 +11,12 @@
   "author": "Jonathan 'Poak' Fernandez",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/datastore": "^6.1.0",
     "axios": "^0.20.0",
     "discord.js": "^12.3.1",
     "memory-cache": "^0.2.0",
     "mongoose": "^5.10.3",
+    "node-cron": "^2.0.3",
     "nodemon": "^2.0.4"
   }
 }

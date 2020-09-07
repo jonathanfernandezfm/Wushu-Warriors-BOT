@@ -1,2 +1,7 @@
 /node_modules
 auth.json
+obsolete.js
+deprecated/database.js
+deprecated/controllers/character.js
+deprecated/lib/wow/wow.js
+deprecated/models/character.js

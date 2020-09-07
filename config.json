@@ -1,0 +1,4 @@
+{
+    "GCLOUD_PROJECT": "wushu-warriors-discord-bot",
+    "DATA_BACKEND": "datastore"
+}

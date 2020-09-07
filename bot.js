@@ -1,30 +1,26 @@
 const Discord = require("discord.js");
-const WoWApi = require("./lib/wow/wow");
+const cron = require("node-cron");
 const auth = require("./auth.json");
-const mongoose = require("./database");
-const bot = new Discord.Client({ partials: ["MESSAGE", "CHANNEL", "REACTION"] });
-const wowApi = new WoWApi(auth.wow.client, auth.wow.client_secret, "eu", "dun-modr", "en_EU");
+const embeds = require("./embeds.js");
 const emojiCharacters = require("./emojis.js");
-const {
-	createSucessEmbed,
-	createErrorEmbed,
-	editErrorEmbed,
-	createEmbedRolling,
-	createEmbedFinal,
-	createApuestaEmbed,
-	createEncuestaEmbed,
-	createEncuestaResultsEmbed,
-} = require("./embeds.js");
+const { Datastore } = require("@google-cloud/datastore");
+const { createTicketEmbed } = require("./embeds.js");
+
+const datastore = new Datastore();
+const bot = new Discord.Client({ partials: ["MESSAGE", "CHANNEL", "REACTION"] });
 
 const ROLE_OFICIAL = "751910138092453900";
+const ROLE_DEVELOPER = "751910138092453900";
+const SUGERENCIAS_CATEGORY = "752661704638333048";
+const SUGERENCIAS_CHANNEL = "752659528746532955";
 
-const Character = require("./controllers/character");
-
-wowApi.login();
 bot.login(auth.discord.token);
 
 bot.on("ready", (evt) => {
 	console.log("Bot started!");
+	console.log(process.versions);
+
+	cron.schedule("0 45 21 * * MON,TUE,WED,THU,SUN *", () => {});
 });
 
 bot.on("message", (msg) => {
@@ -42,12 +38,16 @@ bot.on("message", (msg) => {
 		});
 
 		if (user_tagged && msg.author.id === user_tagged.id) {
-			createErrorEmbed(msg.channel, "❌ No puedes apostar contigo mismo");
+			embeds.createErrorEmbed(msg.channel, "❌ No puedes apostar contigo mismo");
 			return;
 		}
 
 		if (!first_parameter) {
-			createErrorEmbed(msg.channel, "❌ Error en el comando.", "Uso: w!bet @usuario 100");
+			embeds.createErrorEmbed(
+				msg.channel,
+				"❌ Error en el comando.",
+				"Uso: w!bet @usuario 100"
+			);
 			return;
 		}
 
@@ -57,12 +57,16 @@ bot.on("message", (msg) => {
 		} else if (second_parameter) {
 			amount = parseInt(second_parameter);
 		} else {
-			createErrorEmbed(msg.channel, "❌ Error en el comando", "Uso: w!bet @usuario 100");
+			embeds.createErrorEmbed(
+				msg.channel,
+				"❌ Error en el comando",
+				"Uso: w!bet @usuario 100"
+			);
 			return;
 		}
 
 		if (!amount) {
-			createErrorEmbed(msg.channel, "❌ Cantidad errónea", "Uso: w!bet @usuario 100");
+			embeds.createErrorEmbed(msg.channel, "❌ Cantidad errónea", "Uso: w!bet @usuario 100");
 			return;
 		}
 
@@ -83,7 +87,7 @@ bot.on("message", (msg) => {
 			}
 		};
 
-		const embed = createApuestaEmbed();
+		const embed = embeds.createApuestaEmbed();
 
 		if (user_tagged) {
 			embed.addFields(
@@ -111,7 +115,11 @@ bot.on("message", (msg) => {
 							if (user_that_reacted) user_tagged = user_that_reacted;
 
 							if (message_reaction.emoji.name === "☝️") {
-								const embed_rolling = createEmbedRolling(msg, user_tagged, amount);
+								const embed_rolling = embeds.createEmbedRolling(
+									msg,
+									user_tagged,
+									amount
+								);
 
 								let author_roll = Math.floor(Math.random() * 6) + 1;
 								let oponent_roll = Math.floor(Math.random() * 6) + 1;
@@ -120,7 +128,7 @@ bot.on("message", (msg) => {
 								else if (oponent_roll > author_roll) winner = user_tagged;
 								else winner = undefined;
 
-								const embed_final = createEmbedFinal(
+								const embed_final = embeds.createEmbedFinal(
 									msg,
 									user_tagged,
 									amount,
@@ -147,7 +155,7 @@ bot.on("message", (msg) => {
 							}
 
 							if (message_reaction.emoji.name === "❌") {
-								editErrorEmbed(msg_sended, "❌ Apuesta cancelada");
+								embeds.editErrorEmbed(msg_sended, "❌ Apuesta cancelada");
 							}
 						});
 					})
@@ -158,6 +166,8 @@ bot.on("message", (msg) => {
 			})
 			.catch((err) => {});
 	}
+
+	//////////////////////////////////////////////
 
 	if (msg.content.includes("w!multiEncuesta") || msg.content.includes("w!encuesta")) {
 		let values = msg.content.split("\n");
@@ -177,17 +187,17 @@ bot.on("message", (msg) => {
 			desc_error = "Uso:\n w!encuesta\n titulo\n tiempo\n opcion1\nopcion2\n";
 		}
 		if (!title) {
-			createErrorEmbed(msg.channel, param_error, desc_error);
+			embeds.createErrorEmbed(msg.channel, param_error, desc_error);
 			return;
 		}
 
 		if (!time) {
-			createErrorEmbed(msg.channel, param_error, desc_error);
+			embeds.createErrorEmbed(msg.channel, param_error, desc_error);
 			return;
 		}
 
 		if (values.length < 1) {
-			createErrorEmbed(msg.channel, param_error, desc_error);
+			embeds.createErrorEmbed(msg.channel, param_error, desc_error);
 			return;
 		}
 
@@ -203,7 +213,7 @@ bot.on("message", (msg) => {
 			description += "\nReacciona con la/las opción/opciones que desees.";
 		else description += "\nReacciona con la opción que desees.";
 
-		const encuestaEmbed = createEncuestaEmbed(title, description);
+		const encuestaEmbed = embeds.createEncuestaEmbed(title, description);
 
 		let opciones = "";
 		let letra = 97;
@@ -237,7 +247,7 @@ bot.on("message", (msg) => {
 					.awaitReactions(filter, { time: time, errors: ["time"] })
 					.then((collected) => {})
 					.catch((collected) => {
-						const embed_results = createEncuestaResultsEmbed(title);
+						const embed_results = embeds.createEncuestaResultsEmbed(title);
 
 						let result_list = "";
 						collected.forEach((collect) => {
@@ -271,7 +281,7 @@ bot.on("message", (msg) => {
 						console.log("then" + collected);
 					})
 					.catch((collected) => {
-						const embed_results = createEncuestaResultsEmbed(title);
+						const embed_results = embeds.createEncuestaResultsEmbed(title);
 
 						let result_list = "";
 						collected.forEach((collect) => {
@@ -302,154 +312,180 @@ bot.on("message", (msg) => {
 		});
 	}
 
-	if (msg.content.includes("w!addChar")) {
-		let values = msg.content.split(" ");
-		let character_name = values[values.length - 1];
-		let discord_user;
+	//////////////////////////////////////////////
+
+	if (msg.content.includes("w!sugerencia")) {
+		msg.delete();
+	}
+
+	//////////////////////////////////////////////
+
+	if (
+		msg.content.includes("dev!updateRoles") &&
+		msg.member._roles.find((role) => role === ROLE_DEVELOPER)
+	) {
+		msg.guild.roles.cache.map((role) => {
+			const roleKey = datastore.key(["Role", role.id]);
+
+			const roleEntity = {
+				key: roleKey,
+				data: {
+					name: role.name,
+					color: role.color,
+				},
+			};
+
+			datastore
+				.merge(roleEntity)
+				.then((res) => {
+					console.log(res);
+				})
+				.catch((err) => {
+					console.log("Error saving role: ", err);
+				});
+		});
+	}
+
+	//////////////////////////////////////////////
+
+	if (
+		msg.content.includes("dev!addOficialRole") &&
+		msg.member._roles.find((role) => role === ROLE_DEVELOPER)
+	) {
+		let param_role = msg.content.split(" ")[1];
 
 		msg.delete();
-		if (values.length <= 1) {
-			createErrorEmbed(
-				msg.channel,
-				"❌ Error en el comando.",
-				"Uso: \nw!addChar wow_character_name\nw!addChar @user wow_character_name"
-			);
+		if (param_role) {
+			const r = msg.guild.roles.cache.find((role) => param_role === role.name);
+
+			if (!r) {
+				embeds.createErrorEmbed(msg.channel, "❌ Rol no encontrado.");
+				return;
+			}
+
+			const roleKey = datastore.key(["Role", r.id]);
+
+			const roleEntity = {
+				key: roleKey,
+				data: {
+					name: r.name,
+					color: r.color,
+					oficial: true,
+				},
+			};
+
+			datastore
+				.save(roleEntity)
+				.then((res) => {
+					console.log(res);
+				})
+				.catch((err) => {
+					console.log("Error saving role: ", err);
+				});
+		} else {
+			embeds.createErrorEmbed(msg.channel, "❌ Error en los parametros.");
 			return;
 		}
+	}
 
-		if (msg.mentions.users.size > 1) {
-			createErrorEmbed(msg.channel, "❌ Error en el comando.", "Tagea solo un usuario");
+	//////////////////////////////////////////////
+
+	if (
+		msg.content.includes("dev!removeOficialRole") &&
+		msg.member._roles.find((role) => role === ROLE_DEVELOPER)
+	) {
+		let param_role = msg.content.split(" ")[1];
+
+		msg.delete();
+		if (param_role) {
+			const r = msg.guild.roles.cache.find((role) => param_role === role.name);
+
+			if (!r) {
+				embeds.createErrorEmbed(msg.channel, "❌ Rol no encontrado.");
+				return;
+			}
+
+			const roleKey = datastore.key(["Role", r.id]);
+
+			const roleEntity = {
+				key: roleKey,
+				data: {
+					name: r.name,
+					color: r.color,
+				},
+			};
+
+			datastore
+				.save(roleEntity)
+				.then((res) => {
+					console.log(res);
+				})
+				.catch((err) => {
+					console.log("Error saving role: ", err);
+				});
+		} else {
+			embeds.createErrorEmbed(msg.channel, "❌ Error en los parametros.");
 			return;
 		}
+	}
 
-		msg.mentions.users.forEach((u) => {
-			discord_user = u;
-		});
+	//////////////////////////////////////////////
 
-		if (!character_name) {
-			createErrorEmbed(
-				msg.channel,
-				"❌ Error en el comando.",
-				"Uso: \nw!addChar wow_character_name\nw!addChar @user wow_character_name"
-			);
-			return;
-		}
+	if (
+		msg.content.includes("dev!createTicketEmbed") &&
+		msg.member._roles.find((role) => role === ROLE_DEVELOPER)
+	) {
+		msg.channel.send(embeds.createTicketEmbed()).then((message) => {
+			message.react("✉️").then((react) => {
+				const filter = (reaction, user) => {
+					return reaction.emoji.name === "✉️";
+				};
 
-		if (!discord_user) discord_user = msg.author;
+				const collector = message.createReactionCollector(filter, {});
 
-		if (
-			Character.find(discord_user) &&
-			!msg.member._roles.find((role) => role === ROLE_OFICIAL)
-		) {
-			createErrorEmbed(msg.channel, "❌ Jugador ya asignado. Contacta con un Oficial");
-			return;
-		}
+				collector.on("collect", (reaction, user) => {
+					reaction.users.remove(user.id);
 
-		wowApi
-			.getGuildRoster("wushu-warriors")
-			.then((guild) => {
-				let player = guild.data.members.find(
-					(player) => player.character.name === character_name
-				);
+					msg.guild.channels
+						.create("ticket-" + user.username, {
+							type: "text",
+							parent: SUGERENCIAS_CATEGORY,
+							permissionOverwrites: [
+								{ id: message.guild.id, deny: ["VIEW_CHANNEL"] },
+								{ id: user.id, allow: ['VIEW_CHANNEL'] },
+							],
+							reason: "New ticket channel",
+						})
+						.then((channel) => {
+							channel.send(
+								user.toString() +
+									" escribe aqui tu sugerencia/problema. Recuerda que es un unico mensaje el que puedes enviar."
+							);
 
-				if (!player) {
-					createErrorEmbed(
-						msg.channel,
-						`❌ Jugador ${character_name} no encontrado.`,
-						"Debes formar parte de la hermandad"
-					);
-					return;
-				}
+							const filter2 = (ticket_message) => {
+								return user.id === ticket_message.author.id;
+							};
 
-				Character.create(discord_user.id, character_name)
-					.then((item) => {
-						createSucessEmbed(
-							msg.channel,
-							"Personaje añadido",
-							discord_user.toString() + ": " + character_name
-						);
-						msg.guild.members.fetch(discord_user.id).then((member) => {
-							member
-								.setNickname(character_name)
-								.then((member) => {})
-								.catch((err) => {
-									console.log(err);
-								});
+							channel.awaitMessages(filter2, { max: 1 }).then((messages) => {
+								let ticket_message;
+
+								messages.forEach((m) => {
+									ticket_message = m;
+								})
+								
+								const sug_channel = msg.guild.channels.resolve(SUGERENCIAS_CHANNEL);
+								sug_channel.send(embeds.createTicketSentEmbed(ticket_message.author, ticket_message));
+								channel.delete();
+							});
 						});
-					})
-					.catch((item) => {
-						Character.update(discord_user.id, character_name)
-							.then((item) => {
-								createSucessEmbed(
-									msg.channel,
-									"Personaje actualizado",
-									discord_user.toString() + ": " + character_name,
-									"#fcf003"
-								);
+				});
 
-								msg.guild.members.fetch(discord_user.id).then((member) => {
-									member
-										.setNickname(character_name)
-										.then((member) => {})
-										.catch((err) => {
-											console.log(err);
-										});
-								});
-							})
-							.catch((err) => {
-								createErrorEmbed(
-									msg.channel,
-									"❌ Error interno.",
-									"Uso: \nw!addChar wow_character_name\nw!addChar @user wow_character_name"
-								);
-							});
-					});
-			})
-			.catch((err) => {
-				console.log(err);
+				collector.on("end", (collected) => {
+					console.log(`Collected ${collected.size} items`);
+				});
 			});
-	}
-
-	if (msg.content.includes("w!deleteChar")) {
-		let discord_user;
-
-		msg.delete();
-
-		if (msg.mentions.users.size > 1) {
-			createErrorEmbed(msg.channel, "❌ Error en el comando.", "Tagea solo un usuario");
-			return;
-		}
-
-		msg.mentions.users.forEach((u) => {
-			discord_user = u;
 		});
-
-		if (!discord_user) discord_user = msg.author;
-
-		Character.delete(discord_user.id)
-			.then((deleted) => {
-				if (deleted.deletedCount != 0) {
-					createSucessEmbed(
-						msg.channel,
-						"Personaje eliminado",
-						discord_user.toString(),
-						"#f56942",
-						"⭕"
-					);
-					msg.guild.members.fetch(discord_user.id).then((member) => {
-						member
-							.setNickname("")
-							.then((member) => {})
-							.catch((err) => {
-								console.log(err);
-							});
-					});
-				} else {
-					createErrorEmbed(msg.channel, "❌ No hay personaje asociado a este usuario.");
-				}
-			})
-			.catch((err) => {
-				console.log("Error deleting user" + err);
-			});
 	}
+
+	/////////////////////////////////////////////
 });
