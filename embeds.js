@@ -12,19 +12,27 @@ module.exports = {
 		const embed = new Discord.MessageEmbed().setColor("#fc2003").setTitle(text);
 		if (desc) embed.setDescription(desc);
 
-		channel.send(embed).then((message) => {
-			setTimeout(() => message.delete(), ERROR_TIMEOUT_TIME);
-		});
+		channel
+			.send(embed)
+			.then((message) => {
+				setTimeout(() => message.delete(), ERROR_TIMEOUT_TIME);
+			})
+			.catch((err) => {
+				console.log("createErrorEmbed error", err);
+			});
 	},
 	editErrorEmbed: (msg, text, desc) => {
 		const embed = new Discord.MessageEmbed().setColor("#fc2003").setTitle(text);
 		if (desc) embed.setDescription(desc);
 
-		msg.edit(embed).then((message) => {
-			setTimeout(() => message.delete(), ERROR_TIMEOUT_TIME);
-		});
+		msg.edit(embed)
+			.then((message) => {
+				setTimeout(() => message.delete(), ERROR_TIMEOUT_TIME);
+			})
+			.catch((err) => {
+				console.log("editErrorEmbed error", err);
+			});
 	},
-
 	createApuestaEmbed: () => {
 		return new Discord.MessageEmbed()
 			.setColor("#fcf003")
@@ -34,7 +42,6 @@ module.exports = {
 			)
 			.setTimestamp();
 	},
-
 	createEmbedRolling: (msg, user_tagged, amount) => {
 		return new Discord.MessageEmbed()
 			.setColor("#00d1a4")
@@ -51,7 +58,6 @@ module.exports = {
 			.setThumbnail("https://i.gifer.com/origin/58/588a818c855cd3e2c39f853e4515b66d.gif")
 			.setTimestamp();
 	},
-
 	createEmbedFinal: (msg, user_tagged, amount, author_roll, oponent_roll) => {
 		return new Discord.MessageEmbed()
 			.setColor("#00d11f")
@@ -70,17 +76,14 @@ module.exports = {
 			)
 			.setTimestamp();
 	},
-
 	createEncuestaEmbed: (title, description) => {
 		return new Discord.MessageEmbed()
 			.setTitle("📜 Encuesta: " + title)
 			.setDescription(description);
 	},
-
 	createEncuestaResultsEmbed: (title) => {
 		return new Discord.MessageEmbed().setTitle("✅ " + title);
 	},
-
 	createTicketEmbed: () => {
 		return new Discord.MessageEmbed()
 			.setColor("#4587f7")
@@ -92,10 +95,20 @@ module.exports = {
 				"https://media1.tenor.com/images/0b46edf37db3fd5d9ce71c9763bef6af/tenor.gif"
 			);
 	},
-
 	createTicketSentEmbed: (user, message) => {
 		return new Discord.MessageEmbed()
 			.setTitle("📨 Ticket")
 			.setDescription("**Usuario**: " + user.toString() + "\n\n" + message.content);
+	},
+	createRaidCronEmbed: () => {
+		return new Discord.MessageEmbed()
+			.setTitle("⏰ Hora de Raid ⏰")
+			.setDescription(
+				"La raid comenzará en aproximadamente **15 minutos**.\nMientras mas gente haya antes de esa hora antes estaremos delante del boss 😀\n Todos para adentro!"
+			)
+			.setColor("#ffd54a")
+			.setImage(
+				"https://bnetcmsus-a.akamaihd.net/cms/blog_header/5i/5IDOOPM2F5SN1599022991558.jpg"
+			);
 	},
 };
