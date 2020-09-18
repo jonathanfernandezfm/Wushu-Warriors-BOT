@@ -42,7 +42,7 @@ bot.on("ready", async (evt) => {
 	});
 
 	// CRONS
-	cron.schedule("0 45 21 * * MON,TUE,WED,THU,SUN *", () => {
+	cron.schedule("0 45 19 * * MON,TUE,WED,THU,SUN *", () => {
 		const channel = bot.channels.cache.get(constants.GENERAL_CHANNEL);
 		channel.send("@here");
 		channel.send(embeds.createRaidCronEmbed());
