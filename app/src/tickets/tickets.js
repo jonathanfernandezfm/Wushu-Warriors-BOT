@@ -1,5 +1,7 @@
 const embeds = require("../../../embeds");
 const constants = require("../../../constants");
+const tickets = require("../tickets/tickets");
+const Collector = require("../controllers/collector");
 
 module.exports = {
 	createTicketCollector: (ticket_embed_message) => {
@@ -75,5 +77,28 @@ module.exports = {
 		collector.on("end", (collected) => {
 			console.log(`Collected ${collected.size} items`);
 		});
+	},
+	createTicketEmbed: (msg) => {
+		msg.delete();
+		msg.channel
+			.send(embeds.createTicketEmbed())
+			.then((ticket_embed_message) => {
+				ticket_embed_message
+					.react("✉️")
+					.then((react) => {
+						Collector.add(
+							ticket_embed_message.id,
+							ticket_embed_message.channel.id,
+							"ticket"
+						);
+						tickets.createTicketCollector(ticket_embed_message);
+					})
+					.catch((err) => {
+						console.warn("Error reacting", err);
+					});
+			})
+			.catch((err) => {
+				console.warn("Error creating ticket embed", err);
+			});
 	},
 };

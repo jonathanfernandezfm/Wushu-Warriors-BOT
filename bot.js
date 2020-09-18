@@ -7,38 +7,39 @@ const developer = require("./app/src/developer/developer");
 const surveys = require("./app/src/surveys/surveys");
 const gambling = require("./app/src/gambling/gambling");
 const constants = require("./constants");
-const { Datastore } = require("@google-cloud/datastore");
+const mongoose = require("./config/database");
 
-const datastore = new Datastore();
+mongoose.connection.on("error", console.error.bind(console, "Error connecting to MongoDB"));
 const bot = new Discord.Client({ partials: ["MESSAGE", "CHANNEL", "REACTION"] });
+const Collector = require("./app/src/controllers/collector");
 
 bot.login(auth.discord.token);
 
 bot.on("ready", async (evt) => {
 	console.log("Bot started!");
-	// console.log(process.versions);
 
 	// COLLECTORS
-	const query = datastore.createQuery("Collector");
-	const [collectors] = await datastore.runQuery(query);
+	Collector.list("ticket").then((values) => {
+		values.forEach((collector) => {
+			if (collector.type === "ticket") {
+				const messageId = collector.messageId;
 
-	for (const collector of collectors) {
-		const collectorKey = collector[datastore.KEY];
-		if (collector.type === "ticket") {
-			const msg_id = collectorKey.name;
-
-			bot.channels.cache
-				.get(collector.channel)
-				.messages.fetch(msg_id)
-				.then((msg) => {
-					tickets.createTicketCollector(msg);
-					console.log("Ticket collector created");
-				})
-				.catch((err) => {
-					console.warn("Ticket collector error", err);
-				});
-		}
-	}
+				bot.channels.cache
+					.get(collector.channelId)
+					.messages.fetch(messageId)
+					.then((msg) => {
+						tickets.createTicketCollector(msg);
+						console.log("Ticket collector created");
+					})
+					.catch((err) => {
+						console.error("Ticket collector error", err);
+						if (err.message === "Unknown Message") {
+							Collector.delete(collector.id);
+						}
+					});
+			}
+		});
+	});
 
 	// CRONS
 	cron.schedule("0 45 21 * * MON,TUE,WED,THU,SUN *", () => {
@@ -78,7 +79,7 @@ bot.on("message", (msg) => {
 
 	if (msg.content.includes("dev!createTicketEmbed"))
 		if (msg.member._roles.find((role) => role === constants.ROLE_DEVELOPER))
-			developer.createTicketEmbed(msg);
+			tickets.createTicketEmbed(msg);
 
 	//////////////////////////////////////////////
 
