@@ -1,7 +1,7 @@
 const embeds = require("../../../embeds");
 const constants = require("../../../constants");
-const tickets = require("../tickets/tickets");
-const Collector = require("../controllers/collector");
+const tickets = require("./tickets");
+const Collector = require("../../controllers/collector");
 
 module.exports = {
 	createTicketCollector: (ticket_embed_message) => {

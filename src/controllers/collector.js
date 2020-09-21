@@ -1,6 +1,5 @@
 const collectorModel = require("../models/collector");
 
-// Codificamos las operaciones que se podran realizar con relacion a los usuarios
 module.exports = {
 	add: (messageId, channelId, type) => {
 		collectorModel

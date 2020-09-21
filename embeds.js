@@ -1,4 +1,5 @@
 const Discord = require("discord.js");
+const { IMAGES } = require("./constants");
 const ERROR_TIMEOUT_TIME = 4000;
 
 module.exports = {
@@ -101,14 +102,13 @@ module.exports = {
 			.setDescription("**Usuario**: " + user.toString() + "\n\n" + message.content);
 	},
 	createRaidCronEmbed: () => {
+		const imageURL = IMAGES[Math.floor(Math.random() * IMAGES.length)];
 		return new Discord.MessageEmbed()
 			.setTitle("⏰ Hora de Raid ⏰")
 			.setDescription(
 				"La raid comenzará en aproximadamente **15 minutos**.\nMientras mas gente haya antes de esa hora antes estaremos delante del boss 😀\n Todos para adentro!"
 			)
 			.setColor("#ffd54a")
-			.setImage(
-				"https://bnetcmsus-a.akamaihd.net/cms/blog_header/5i/5IDOOPM2F5SN1599022991558.jpg"
-			);
+			.setImage(imageURL);
 	},
 };

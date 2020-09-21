@@ -2,16 +2,18 @@ const Discord = require("discord.js");
 const cron = require("node-cron");
 const auth = require("./auth.json");
 const embeds = require("./embeds.js");
-const tickets = require("./app/src/tickets/tickets");
-const developer = require("./app/src/developer/developer");
-const surveys = require("./app/src/surveys/surveys");
-const gambling = require("./app/src/gambling/gambling");
+const tickets = require("./src/core/tickets/tickets");
+const developer = require("./src/core/developer/developer");
+const surveys = require("./src/core/surveys/surveys");
+const gambling = require("./src/core/gambling/gambling");
+const crons = require("./src/core/crons/crons");
 const constants = require("./constants");
 const mongoose = require("./config/database");
 
 mongoose.connection.on("error", console.error.bind(console, "Error connecting to MongoDB"));
 const bot = new Discord.Client({ partials: ["MESSAGE", "CHANNEL", "REACTION"] });
-const Collector = require("./app/src/controllers/collector");
+const Collector = require("./src/controllers/collector");
+const Cron = require("./src/controllers/cron");
 
 bot.login(auth.discord.token);
 
@@ -42,10 +44,22 @@ bot.on("ready", async (evt) => {
 	});
 
 	// CRONS
-	cron.schedule("0 45 19 * * MON,TUE,WED,THU,SUN *", () => {
-		const channel = bot.channels.cache.get(constants.GENERAL_CHANNEL);
-		channel.send("@here");
-		channel.send(embeds.createRaidCronEmbed());
+	Cron.list().then((values) => {
+		values.forEach((_cron) => {
+			switch (_cron.type) {
+				case "raid":
+					if (_cron.active) {
+						cron.schedule(_cron.time, () => {
+							_cron.channel.send("@here");
+							_cron.channel.send(embeds.createRaidCronEmbed());
+						});
+						console.log("Raid cron created");
+					}
+					break;
+				default:
+					console.log("Cron type does not exist");
+			}
+		});
 	});
 });
 
@@ -83,22 +97,15 @@ bot.on("message", (msg) => {
 
 	//////////////////////////////////////////////
 
+	if (msg.content.includes("dev!createCron"))
+		if (msg.member._roles.find((role) => role === constants.ROLE_DEVELOPER))
+			crons.createCron(msg);
+
+	//////////////////////////////////////////////
+
 	if (msg.content.includes("dev!test"))
 		if (msg.member._roles.find((role) => role === constants.ROLE_DEVELOPER)) {
-			bot.channels.cache
-				.get(constants.BIENVENIDA_CHANNEL)
-				.send(
-					`**Pepe** acaba de unirse al servidor. Bievenido! Echale un vistazo a tus mensajes privados 👀`
-				);
-			msg.author
-				.createDM()
-				.then((channel) => {
-					console.log(channel);
-					channel.send(embeds.createSucessEmbed(channel, "Bievenido!!"));
-				})
-				.catch((err) => {
-					console.warn(err);
-				});
+			msg.channel.send("test");
 		}
 
 	/////////////////////////////////////////////
